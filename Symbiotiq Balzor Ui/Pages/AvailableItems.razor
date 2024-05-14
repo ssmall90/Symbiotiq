@@ -1,0 +1,173 @@
+﻿@page "/AvailableItems"
+@using Symbiotiq_Balzor_Ui.Models
+@using Symbiotiq_Balzor_Ui.Data_Access
+@inject IAuthService authServ
+@inject IMongoFoodItemData foodItemData
+@inject IMongoNonFoodItemData nonFoodItemData
+@inject NavigationManager navManager
+
+<h3 class="selected-category-text-display">Available @selectedFilter</h3>
+
+<div class="search-and-filter-container">
+    <div class="item-category-filter">
+
+        <div class="item-type-text-container">
+            <label class="item-type-text" for="itemCategory">Choose Category:</label>
+
+        </div>
+        <div class="category-filter-control-container">
+            <select @bind="@selectedFilter" id="item-category-filter">
+                <option value="food">Food</option>
+                <option value="books">Books</option>
+                <option value="electronics">Electronics</option>
+                <option value="clothes">Clothes</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
+
+    </div>
+
+    <div class="search-bar-container">
+        <form>
+            <label for="search-bar">Search</label>
+            <input type="search" id="search-bar" name="search-bar" class="search-bar-box">
+        </form>
+    </div>
+</div>
+
+@if (loggedInUser is not null)
+{
+
+    @if (selectedFilter == "food")
+    {
+        categoryEmpty = true;
+        hasItems = (foods?.Count > 0);
+
+        @if (hasItems)
+        {
+            @foreach (var post in foods)
+            {
+                @if (loggedInUser.Id != post.ItemDonater)
+                {
+                    categoryEmpty = false;
+                    <div class="user-single-listing-cotainer">
+                        <div class="left-side-of-listing-container">
+                            <div class="listing-title">
+                                <h6>
+                                    @post.ItemTitle
+                                </h6>
+                            </div>
+                            <div class="listing-img">
+                                <img src="../Images/foodavatar.png" />
+                            </div>
+                        </div>
+                        <div class="right-side-of-listing-container-view-button">
+                            <div class="view-post-button-conatiner">
+                                <button class="view-post-button btn-primary" @onclick="() => viewFoodItem(post.Id)">View Post</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+
+            @if (categoryEmpty)
+            {
+                <h2>There are currently no food items available</h2>
+            }
+        }
+        else
+        {
+            <h2>There are currently no food items available</h2>
+        }
+    }
+    else
+    {
+        categoryEmpty = true;
+        hasItems = (nonFoods?.Count > 0);
+
+        @if (hasItems)
+        {
+            @foreach (var post in nonFoods)
+            {
+                if (post.ItemCategory == selectedFilter)
+                {
+                    @if (loggedInUser.Id != post.ItemDonater)
+                    {
+                        categoryEmpty = false;
+                        <div class="user-single-listing-cotainer">
+                            <div class="left-side-of-listing-container">
+                                <div class="listing-title">
+                                    <h6>
+                                        @post.ItemTitle
+                                    </h6>
+                                </div>
+                                <div class="listing-img">
+                                    <img src="../Images/foodavatar.png" />
+                                </div>
+                            </div>
+                            <div class="right-side-of-listing-container-view-button">
+                                <div class="view-post-button-conatiner">
+                                    <button class="view-post-button btn-primary" @onclick="() => viewNonFoodItem(post.Id)">View Post</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+            }
+            @if (categoryEmpty)
+            {
+                <h2>There are currently no items available</h2>
+            }
+        }
+        else
+        {
+            <h2>There are currently no items available</h2>
+        }
+
+    }
+
+}
+
+
+
+@code {
+    private string selectedFilter = "food";
+    private UserModel loggedInUser;
+    private List<FoodItems> foods;
+    private List<NonFoodItemModel> nonFoods;
+    private string currentFoodItemId;
+    private string currentNonFoodItemId;
+    private string currentFoodItemTitle;
+    private string currentNonFoodItemTitle;
+    private bool hasItems;
+    private bool categoryEmpty;
+
+    protected async override Task OnInitializedAsync()
+    {
+        loggedInUser = authServ.CurrentUser;
+        foods = await foodItemData.GetAllFoodItems();
+        nonFoods = await nonFoodItemData.GetAllNonFoodItems();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await authServ.InitializeAsync();
+            loggedInUser = authServ.CurrentUser;
+            StateHasChanged();
+        }
+    }
+
+    public void viewFoodItem(string id)
+    {
+        currentFoodItemId = id;
+        navManager.NavigateTo($"/ItemInfo/{currentFoodItemId}");
+    }
+
+    public void viewNonFoodItem(string currentnonfooditemid)
+    {
+        currentNonFoodItemId = currentnonfooditemid;
+        navManager.NavigateTo($"/ItemInfo/{currentNonFoodItemId}");
+    }
+}

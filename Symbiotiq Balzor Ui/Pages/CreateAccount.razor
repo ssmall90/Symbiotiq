@@ -1,0 +1,83 @@
+﻿@page "/CreateAccount"
+
+@using Symbiotiq_Balzor_Ui.Data_Access
+@using Symbiotiq_Balzor_Ui.Models
+@using Blazorise
+@inject IMongoUserData userData;
+@inject NavigationManager navManager;
+@inject IAuthService authService;
+
+
+<div class="create-account-container">
+    <form class="create-form" @onsubmit="AddUserToDatabase">
+        <div class="create-form-button-container">
+            <h1>Create Account</h1>
+        </div>
+        <div class="input-group">
+            <label for="firstname">First Name:</label>
+            <input type="text" id="firstName" @bind="firstName" required>
+        </div>
+        <div class="input-group">
+            <label for="surname">Surname:</label>
+            <input type="text" id="surname" @bind="surname" required>
+        </div>
+        <div class="input-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" @bind="userName" required>
+        </div>
+        <div class="input-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" @bind="email" required />
+        </div>
+        <div class="input-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" @bind="password" required />
+        </div>
+        <div class="create-form-button-container">
+            <button type="submit">Sign Up</button>
+        </div>
+    </form>
+</div>
+
+@if (showSuccessMessage)
+{
+    <div class="success-message">
+        Account created successfully!
+    </div>
+}
+
+@code {
+    private string ?firstName;
+    private string ?surname;
+    private string ?userName;
+    private string ?password;
+    private string ?email;
+
+    private bool showSuccessMessage = false;
+
+
+    public async Task ShowSuccessMessage()
+    {
+        showSuccessMessage = true;
+        StateHasChanged(); 
+        await Task.Delay(3000); 
+        showSuccessMessage = false;
+        StateHasChanged(); 
+    }
+
+
+    private async Task AddUserToDatabase()
+    {
+        UserModel user = new(firstName!, surname!, userName!, email!, password!);
+
+        await userData.CreateUser(user);
+
+        await ShowSuccessMessage();
+
+        navManager.NavigateTo("/");
+    }
+
+
+  }
+
+

@@ -1,0 +1,96 @@
+﻿@page "/Shops"
+@using Symbiotiq_Balzor_Ui.Data_Access
+@using Symbiotiq_Balzor_Ui.Models
+@inject IMongoUserData userData;
+@inject IAuthService authService;
+
+<h3>Shops</h3>
+@if (shops != null)
+{
+    @foreach (var shop in shops)
+    {
+        <div class="user-single-listing-cotainer">
+            <div class="left-side-of-listing-container">
+                <div class="listing-title">
+                    <h6>
+                        @shop.DisplayName
+                    </h6>
+                </div>
+                <div class="listing-img">
+                    <img src="../Images/shopavatar.png" />
+                </div>
+            </div>
+            <div class="right-side-of-listing-container">
+                <div class="status-container">
+                    <div>
+                        @if (shop.HasAvailableItems == true)
+                        {
+                            <h6>Items Available</h6>
+                        }
+                        @if (shop.HasAvailableItems == false)
+                        {
+                            <h6>Items Not Available</h6>
+                        }
+
+                    </div>
+                </div>
+                <div class="view-post-button-conatiner">
+                    @if (shop.HasAvailableItems == true)
+                    {
+                        <button class="view-post-button btn-primary" @onclick="() => ConfirmColection(shop)">Confirm Collection</button>
+                    }
+                    @if (shop.CollectionRequested == true && shop.HasAvailableItems == false)
+                    {
+                        <p>@shop.Collector has confirmed they will be making a collection from here today.</p>
+                    }
+
+                </div>
+            </div>
+        </div>
+
+    }
+}
+
+
+@code {
+
+    private UserModel? loggedInUser;
+    private bool isFoodItem;
+    private bool hasItemLoaded = false;
+    private List<UserModel>? shops;
+    private UserModel? currentShop;
+    private string? nameOfCollector;
+
+
+    protected async override Task OnInitializedAsync()
+    {
+        loggedInUser = authService.CurrentUser;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await authService.InitializeAsync();
+            loggedInUser = authService.CurrentUser;
+            shops = await userData.GetAllShops();
+            StateHasChanged(); // Ensure the component re-renders after data is loaded
+        }
+    }
+
+    public void ConfirmColection(UserModel shop)
+    {
+        //Possibly Display A Confirmation Message In The Future
+
+        currentShop = shop;
+        currentShop.HasAvailableItems = false;
+        currentShop.CollectionRequested = true;
+        currentShop.Collector = $"{loggedInUser!.FirstName} {loggedInUser.LastName}";
+        userData.UpdateUSer(currentShop);
+        StateHasChanged();
+    }
+
+
+
+}
+

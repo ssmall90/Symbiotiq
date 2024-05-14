@@ -1,0 +1,173 @@
+﻿@page "/Donate"
+@using Symbiotiq_Balzor_Ui.Data_Access
+@using Symbiotiq_Balzor_Ui.Models;
+@inject IAuthService authService;
+@inject IMongoNonFoodItemData nonFoodItemData;
+@inject IMongoFoodItemData foodItemData;
+@inject NavigationManager navManager;
+
+<div>
+    <h3>Donate</h3>
+</div>
+
+<form class="form-content-container" @onsubmit="OnSubmit">
+
+    <div class="item-type-section-container">
+        <div class="item-type-text-container">
+            <label for="itemtype" class="item-type-text">Item Type:</label>
+        </div>
+
+        <div class="item-type-button-container">
+            <input class="btn-secondary @((isFoodItem ? "selected" : ""))" type="button" value="Food Item" id="fooditem" @onclick="() => { isFoodItem = true; }">
+            <input class="btn-secondary non-food-button @((!isFoodItem ? "selected" : ""))" type="button" value="Non-Food Item" id="non-fooditem" @onclick="() => { isFoodItem = false; }">
+        </div>
+    </div>
+
+    @if (!isFoodItem)
+    {
+        <div class="item-category-filter">
+
+            <div class="item-type-text-container">
+                <label class="item-type-text" for="itemCategory">Choose Category:</label>
+
+            </div>
+            <div class="category-filter-control-container">
+                <select id="item-category-filter" @bind="itemCategory" required>
+                    <option value="books">Books</option>
+                    <option value="electronics">Electronics</option>
+                    <option value="clothes">Clothes</option>
+                    <option value="other">Other</option>
+                </select>
+            </div>
+
+        </div>
+    }
+    else
+    {
+        <div>
+            <br />
+            <br />
+        </div>
+    }
+
+    <div class="upload-image-conatiner">
+        <div class="upload-text-container">
+            <label for="image">Select an image:</label>
+            <input type="file" id="image" name="image" accept="image/*">
+
+        </div>
+        <div class="uploaded-image-container">
+            <img class="uploaded-image" src="Images/foodavatar.png" />
+        </div>
+    </div>
+
+    <div class="collection-point-container">
+        <label for="item-title">Item Name:</label>
+        <input type="text" id="donatedItem" name="donatedItem" class="donatedItem-input-box" @bind="itemTitle" required>
+    </div>
+
+    <div class="description-container">
+        <label for="description">Write a description:</label>
+        <input type="text" id="description" name="desription" class="description-input-box" @bind="description" required>
+    </div>
+
+  
+    <div class="collection-point-container">
+        <label for="collection-point">Collection Point:</label>
+        <input type="text" id="collection-point" name="collection-point" class="collection-point-input-box" @bind="collectionPoint" required>
+    </div>
+
+    <div class="collection-point-container">
+        <label for="collectionTime">Collection Time: </label>
+        <input type="time" id="collectionTime" name="collectionTime" class="collection-point-input-box" @bind="collectionTime" required>
+    </div>
+
+
+    <div class="collection-point-container">
+        <label for="quantity">Quantity:</label>
+        <input type="number" id="quantity" name="quantity" class="collection-point-input-box" min="1" max="20" @bind="quantity" required>
+    </div>
+
+
+    <div class="submit-button-conatiner">
+        <button class="btn-secondary submit-button">Submit</button>
+    </div>
+
+</form>
+
+ 
+
+
+
+@code {
+
+    FoodItems foodItem;
+    NonFoodItemModel nonFoodItem;
+
+    private UserModel loggedInUser;
+
+    private string description = "";
+    private string collectionPoint = "";
+    private string itemDonator = "";
+    private string itemTitle = "";
+    private string userId = "";
+    private string itemCategory = "";
+    private int quantity;
+    private DateTime collectionTime;
+
+    bool isFoodItem = false;
+
+    protected override void OnInitialized()
+    {
+        loggedInUser = authService.CurrentUser;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await authService.InitializeAsync();
+            loggedInUser = authService.CurrentUser;
+            StateHasChanged();
+        }
+    }
+
+
+    public void OnSubmit()
+    {
+        if (isFoodItem)
+        {
+            foodItem = new FoodItems();
+            foodItem.ItemDescription = description;
+            foodItem.ItemCollectionPoint = collectionPoint;
+            foodItem.ItemDonater = loggedInUser.Id;
+            foodItem.ItemTitle = itemTitle;
+            foodItem.Quantity = quantity;
+            foodItem.CollectionTime = collectionTime;
+            foodItemData.AddFoodItem(foodItem);
+            ClosePage();
+            isFoodItem = false;
+        }
+        else if (!isFoodItem)
+        {
+            nonFoodItem = new NonFoodItemModel();
+            nonFoodItem.ItemDescription = description;
+            nonFoodItem.ItemCollectionPoint = collectionPoint;
+            nonFoodItem.ItemDonater = loggedInUser.Id;
+            nonFoodItem.ItemTitle = itemTitle;
+            nonFoodItem.ItemCategory = itemCategory;
+            nonFoodItem.Quantity = quantity;
+            nonFoodItem.CollectionTime = collectionTime;
+            nonFoodItemData.CreateNonFoodItem(nonFoodItem);
+            ClosePage();
+            isFoodItem = false;
+        }
+    }
+
+    public void ClosePage()
+    {
+
+        navManager.NavigateTo("/");
+
+    }
+}

@@ -1,0 +1,108 @@
+﻿@inherits LayoutComponentBase
+@using Symbiotiq_Balzor_Ui.Data_Access
+@using Symbiotiq_Balzor_Ui.Models
+@inject IAuthService authService;
+@inject NavigationManager navManager;
+
+<PageTitle>Symbiotiq Balzor Ui</PageTitle>
+
+<div class="page">
+    <main>
+        @if (authService.CurrentUser != null)
+        {
+            @if (authService.CurrentUser.JobTitle == "Admin")
+            {
+                <div class="nav-bar-container">
+
+                    <a class="menu-item" href="/">
+                        Admin Dashboard
+                    </a>
+                    <a class="menu-item" href="/Shops">
+                        Shops
+                    </a>
+                    <a class="menu-item" href="/AvailableItems">
+                        Items
+                    </a>
+                    <a class="menu-item" href="/Donate">
+                        Donate
+                    </a>
+                    <a class="menu-item" href="/Notification">
+                        Notifications
+                    </a>
+                    <a class="menu-item" href="/" @onclick="() => Logout()">
+                        Logout
+                    </a>
+                </div>
+            }
+            else if (authService.CurrentUser.JobTitle == "Shop")
+            {
+                <div class="nav-bar-container">
+                    <a class="menu-item" href="/">
+                        Dashboard
+                    </a>
+                    <a class="menu-item" href="/ConfirmAvailability">
+                        Donate
+                    </a>
+                    <a class="menu-item" href="/" @onclick="() => Logout()">
+                        Logout
+                    </a>
+                </div>
+            }
+
+            else
+            {
+                <div class="nav-bar-container">
+                    <a class="menu-item" href="/">
+                        Dashboard
+                    </a>
+                    <a class="menu-item" href="/AvailableItems">
+                        Items
+                    </a>
+                    <a class="menu-item" href="/Donate">
+                        Donate
+                    </a>
+                    <a class="menu-item" href="/Notification">
+                        Notifications
+                    </a>
+                    <a class="menu-item" href="/" @onclick="() => Logout()">
+                        Logout
+                    </a>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="nav-bar-container">
+                <h1>Symbiotiq</h1>
+            </div>
+        }
+
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+
+
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        authService.OnAuthenticationChanged += Refresh;
+    }
+
+    public void Refresh()
+    {
+        StateHasChanged();
+    }
+
+
+    private void Logout()
+    {
+        authService.Logout();
+        StateHasChanged();
+        navManager.NavigateTo("/", forceLoad: true);
+    }
+
+}

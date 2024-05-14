@@ -1,0 +1,20 @@
+﻿@code {
+    private string[] imagePaths = new string[] { "Images/promo1.png", "Images/promo2.png", "Images/promo3.png" };
+    private int currentIndex = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        var timer = new Timer(async _ =>
+        {
+
+            currentIndex = (currentIndex + 1) % imagePaths.Length;
+            await InvokeAsync(StateHasChanged);
+
+        }, null, TimeSpan.FromSeconds(7), TimeSpan.FromSeconds(7));
+    }
+}
+
+<div class="promo-images-container">
+    <img src="@imagePaths[currentIndex]" />
+</div>

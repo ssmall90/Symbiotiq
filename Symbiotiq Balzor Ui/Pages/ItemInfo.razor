@@ -1,0 +1,397 @@
+﻿@page "/ItemInfo/{itemId}"
+@using Symbiotiq_Balzor_Ui.Data_Access
+@using Symbiotiq_Balzor_Ui.Models
+@inject IAuthService authServ
+@inject IMongoFoodItemData foodItemData
+@inject IMongoNonFoodItemData nonFoodItemData
+@inject IMongoUserData userData
+@inject NavigationManager navManager
+
+
+@if (loggedInUser is not null)
+{
+    @if (hasItemLoaded)
+    {
+        @if ((isFoodItem && loggedInUser.Id != foodItem?.ItemDonater) || (!isFoodItem && loggedInUser.Id != nonFoodItem?.ItemDonater))
+        {
+            <div class="item-type-section-container">
+                <div class="item-type-text-container">
+                    <h3>Item Type:</h3>
+                </div>
+
+                <div class="item-type-description-container">
+                    <div>
+
+                        @if (foodItem == null && hasItemLoaded == true && nonFoodItem != null)
+                        {
+                            <h4>Non food item </h4>
+                        }
+                        @if (nonFoodItem == null && hasItemLoaded == true && foodItem != null)
+                        {
+                            <h4>Food item </h4>
+                        }
+
+                    </div>
+                </div>
+            </div>
+
+            <div class="image-title-conatiner">
+                <div class="item-title-container">
+                    <h4 class="item-title-text">
+                        @if (foodItem == null && hasItemLoaded == true && nonFoodItem != null)
+                        {
+                            @nonFoodItem.ItemTitle
+                        }
+                        @if (nonFoodItem == null && hasItemLoaded == true && foodItem != null)
+                        {
+                            @foodItem.ItemTitle
+                        }
+                    </h4>
+                </div>
+
+                <div class="item-img-container">
+                    <img class="item-info-img" src="Images/foodavatar.png" />
+                </div>
+
+            </div>
+
+
+            <h3>
+                Description
+            </h3>
+
+            <div class="item-info-description-container">
+                <p class="item-info-description-text">
+                    @if (foodItem == null && hasItemLoaded == true && nonFoodItem != null)
+                    {
+                        @nonFoodItem.ItemDescription
+                    }
+                    @if (nonFoodItem == null && hasItemLoaded == true && foodItem != null)
+                    {
+                        @foodItem.ItemDescription
+                    }
+                </p>
+            </div>
+
+
+
+            <h3>
+                Collection Point
+            </h3>
+
+            <div class="item-info-collection-point-container">
+                <p class="item-info-description-text">
+                    @if (foodItem == null && hasItemLoaded == true && nonFoodItem != null)
+                    {
+                        @nonFoodItem.ItemCollectionPoint
+                    }
+                    @if (nonFoodItem == null && hasItemLoaded == true && foodItem != null)
+                    {
+                        @foodItem.ItemCollectionPoint
+                    }
+                </p>
+            </div>
+
+
+            <h3>
+                Collect Time
+            </h3>
+
+            <div class="item-info-collection-point-container">
+                <p class="item-info-description-text">
+                    @if (foodItem == null && hasItemLoaded == true && nonFoodItem != null)
+                    {
+                        @nonFoodItem.CollectionTime.TimeOfDay
+                    }
+                    @if (nonFoodItem == null && hasItemLoaded == true && foodItem != null)
+                    {
+                        @foodItem.CollectionTime.TimeOfDay
+                    }
+                </p>
+            </div>
+
+            <h3>
+                Quantity
+            </h3>
+
+            <div class="item-info-collection-point-container">
+                <p class="item-info-description-text">
+                    @if (foodItem == null && hasItemLoaded == true && nonFoodItem != null)
+                    {
+                        @nonFoodItem.Quantity
+                    }
+                    @if (nonFoodItem == null && hasItemLoaded == true && foodItem != null)
+                    {
+                        @foodItem.Quantity
+                    }
+                </p>
+            </div>
+        }
+        else if ((isFoodItem && loggedInUser.Id == foodItem.ItemDonater) || (!isFoodItem && loggedInUser.Id == nonFoodItem.ItemDonater))
+        {
+
+            <form class="form-content-container" @onsubmit="OnSubmit">
+
+
+                @if (!isFoodItem)
+                {
+                    <div class="item-category-filter">
+
+                        <div class="item-type-text-container">
+                            <label class="item-type-text" for="itemCategory">Choose Category:</label>
+
+                        </div>
+                        <div class="category-filter-control-container">
+                            <select id="item-category-filter" @bind="itemCategory" required>
+                                <option value="books">Books</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="clothes">Clothes</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+
+                    </div>
+                }
+                else
+                {
+                    <div>
+                        <br />
+                        <br />
+                    </div>
+                }
+
+                <div class="upload-image-conatiner">
+                    <div class="upload-text-container">
+                        <label for="image">Select an image:</label>
+                        <input type="file" id="image" name="image" accept="image/*">
+
+                    </div>
+                    <div class="uploaded-image-container">
+                        <img class="uploaded-image" src="Images/foodavatar.png" />
+                    </div>
+                </div>
+
+                <div class="collection-point-container">
+                    <label for="item-title">Item Name:</label>
+                    <input type="text" id="donatedItem" name="donatedItem" class="donatedItem-input-box" @bind="itemTitle" required>
+                </div>
+
+                <div class="description-container">
+                    <label for="description">Write a description:</label>
+                    <input type="text" id="description" name="desription" class="description-input-box" @bind="description" required>
+                </div>
+
+
+                <div class="collection-point-container">
+                    <label for="collection-point">Collection Point:</label>
+                    <input type="text" id="collection-point" name="collection-point" class="collection-point-input-box" @bind="collectionPoint" required>
+                </div>
+
+                <div class="collection-point-container">
+                    <label for="collectionTime">Collection Time: </label>
+                    <input type="time" id="collectionTime" name="collectionTime" class="collection-point-input-box" @bind="collectionTime" required>
+                </div>
+
+
+                <div class="collection-point-container">
+                    <label for="quantity">Quantity:</label>
+                    <input type="number" id="quantity" name="quantity" class="collection-point-input-box" min="1" max="20" @bind="quantity" required>
+                </div>
+
+            </form>
+
+
+        }
+
+    }
+    @if (hasItemLoaded)
+    {
+        @if (isFoodItem)
+        {
+            @if (loggedInUser.Id == foodItem?.ItemDonater)
+            {
+                <div class="submit-button-conatiner">
+                    <button class="btn-secondary submit-button" @onclick="OnSubmit">Edit Item</button>
+                </div>
+            }
+            else
+            {
+                <div class="submit-button-conatiner">
+                    <button class="btn-secondary submit-button" @onclick="RequestItem">Request Item</button>
+                </div>
+            }
+        }
+        else if (!isFoodItem)
+        {
+            @if (loggedInUser.Id == nonFoodItem?.ItemDonater)
+            {
+                <div class="submit-button-conatiner">
+                    <button class="btn-secondary submit-button" @onclick="OnSubmit">Edit Item</button>
+                </div>
+            }
+            else
+            {
+                <div class="submit-button-conatiner">
+                    <button class="btn-secondary submit-button" @onclick="RequestItem">Request Item</button>
+                </div>
+            }
+        }
+    }
+
+}
+
+
+
+
+
+
+
+
+
+@code {
+    [Parameter]
+    public string itemId { get; set; }
+    private UserModel loggedInUser;
+    private FoodItems foodItem;
+    private NonFoodItemModel nonFoodItem;
+    private bool isFoodItem;
+    private bool hasItemLoaded = false;
+
+
+
+    private string description = "";
+    private string collectionPoint = "";
+    private string itemDonator = "";
+    private string itemTitle = "";
+    private string userId = "";
+    private string itemCategory = "";
+    private int quantity;
+    private DateTime collectionTime;
+
+    protected async override Task OnInitializedAsync()
+    {
+        loggedInUser = authServ.CurrentUser;
+        isFoodItem = await foodItemData.IsValid(itemId);
+
+        hasItemLoaded = false;
+        if (isFoodItem)
+        {
+            foodItem = await foodItemData.GetItemById(itemId);
+            hasItemLoaded = true;
+            description = foodItem.ItemDescription;
+            collectionPoint = foodItem.ItemCollectionPoint;
+            itemDonator = foodItem.ItemDonater;
+            itemTitle = foodItem.ItemTitle;
+            quantity = foodItem.Quantity;
+            collectionTime = foodItem.CollectionTime;
+            StateHasChanged();
+        }
+        else
+        {
+            nonFoodItem = await nonFoodItemData.GetItemById(itemId);
+            hasItemLoaded = true;
+            description = nonFoodItem.ItemDescription;
+            collectionPoint = nonFoodItem.ItemCollectionPoint;
+            itemDonator = nonFoodItem.ItemDonater;
+            itemTitle = nonFoodItem.ItemTitle;
+            quantity = nonFoodItem.Quantity;
+            collectionTime = nonFoodItem.CollectionTime;
+            itemCategory = nonFoodItem.ItemCategory;
+            StateHasChanged();
+        }
+
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await authServ.InitializeAsync();
+            loggedInUser = authServ.CurrentUser;
+            StateHasChanged();
+        }
+    }
+
+    private async Task RequestItem()
+    {
+        if (isFoodItem)
+        {
+            UserModel donater;
+            donater = await userData.GetUser(foodItem.ItemDonater);
+
+            MessageModel notification = new MessageModel($"{itemId.Substring(0, 12)}{donater.Id.Substring(0, 6)}{loggedInUser.Id.Substring(0, 6)}", $"{foodItem.ItemTitle}", "Awaiting donater to confirm your request", $"User {loggedInUser.DisplayName} has agreed to collect your {foodItem.ItemTitle} from {foodItem.ItemCollectionPoint} at {foodItem.CollectionTime}", loggedInUser.Id, donater.Id);
+
+            loggedInUser.Messages.Add(notification);
+            donater.Messages.Add(notification);
+
+            await userData.UpdateUSer(donater);
+            await userData.UpdateUSer(loggedInUser);
+
+            foodItem.ItemAvailable = false;
+            await foodItemData.UpdateItem(foodItem);
+
+            StateHasChanged();
+
+            navManager.NavigateTo("/AvailableItems");
+        }
+        else if (!isFoodItem)
+        {
+            UserModel donater;
+            donater = await userData.GetUser(nonFoodItem.ItemDonater);
+
+            MessageModel notification = new MessageModel($"{itemId.Substring(0, 12)}{donater.Id.Substring(0, 6)}{loggedInUser.Id.Substring(0, 6)}", $"{nonFoodItem.ItemTitle}", "Awaiting donater to confirm your request", $"User {loggedInUser.DisplayName} has agreed to collect your {nonFoodItem.ItemTitle} from {nonFoodItem.ItemCollectionPoint} at {nonFoodItem.CollectionTime}", loggedInUser.Id, donater.Id);
+
+            loggedInUser.Messages.Add(notification);
+            donater.Messages!.Add(notification);
+
+            await userData.UpdateUSer(donater);
+            await userData.UpdateUSer(loggedInUser);
+
+            nonFoodItem.ItemAvailable = false;
+            await nonFoodItemData.UpdateItem(nonFoodItem);
+
+            StateHasChanged();
+
+            navManager.NavigateTo("/AvailableItems");
+
+        }
+
+    }
+
+    public void ClosePage()
+    {
+
+        navManager.NavigateTo("/");
+
+    }
+
+    public void OnSubmit()
+    {
+        if (isFoodItem)
+        {
+
+            foodItem.ItemDescription = description;
+            foodItem.ItemCollectionPoint = collectionPoint;
+            foodItem.ItemDonater = loggedInUser.Id;
+            foodItem.ItemTitle = itemTitle;
+            foodItem.Quantity = quantity;
+            foodItem.CollectionTime = collectionTime;
+            foodItemData.UpdateItem(foodItem);
+            ClosePage();
+            isFoodItem = false;
+        }
+        else if (!isFoodItem)
+        {
+            nonFoodItem.ItemDescription = description;
+            nonFoodItem.ItemCollectionPoint = collectionPoint;
+            nonFoodItem.ItemDonater = loggedInUser.Id;
+            nonFoodItem.ItemTitle = itemTitle;
+            nonFoodItem.ItemCategory = itemCategory;
+            nonFoodItem.Quantity = quantity;
+            nonFoodItem.CollectionTime = collectionTime;
+            nonFoodItemData.UpdateItem(nonFoodItem);
+            ClosePage();
+            isFoodItem = false;
+        }
+    }
+}

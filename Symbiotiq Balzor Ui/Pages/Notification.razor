@@ -1,0 +1,476 @@
+﻿@page "/Notification"
+@using Symbiotiq_Balzor_Ui.Data_Access
+@using Symbiotiq_Balzor_Ui.Models
+@inject IAuthService authService
+@inject NavigationManager navManager
+@inject IMongoUserData userData
+
+<h3>Notifications</h3>
+
+@if (loggedInUser is not null)
+{
+    @if (userMessages is not null)
+    {
+        @if (userMessages.Count > 0)
+        {
+            @foreach (var m in userMessages)
+            {
+                @if (m.isDeleted == true)
+                {
+                    @if (loggedInUser.Id == m.Receiver)
+                    {
+                        <div class="message-container col-12">
+                            <div class="message-body col-10">
+                                <h5 id="message-content">@m.ReceiverNotification</h5>
+                            </div>
+                            <div class="confirm-request-container col-2">
+                                <div>
+                                    <button @onclick="() => DeleteNotificationForReceiver(m)" id="reject-btn" class="delete-btn">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                    @if (loggedInUser.Id == m.Sender)
+                    {
+                        <div class="message-container col-12">
+                            <div class="message-body col-10">
+                                <h5 id="message-content">@m.SenderNotification</h5>
+                            </div>
+                            <div class="confirm-request-container col-2">
+                                <div>
+                                    <button @onclick="() => DeleteNotificationForSender(m)" id="reject-btn" class="delete-btn">Delete</button>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                }
+                else if (m.isCompleted == true && m.Sender == loggedInUser.Id)
+                {
+                    <div class="message-container col-12">
+                        <div class="message-body col-8">
+                            <h5 id="message-content">@m.SenderNotification</h5>
+                        </div>
+                        <div class="confirm-request-container col-4">
+                            <div class="feedback-button-container">
+                                <button @onclick="() => SelectFeedbackScore(0)" class="@GetButtonClass(0)">0</button>
+                                <button @onclick="() => SelectFeedbackScore(1)" class="@GetButtonClass(1)">1</button>
+                                <button @onclick="() => SelectFeedbackScore(2)" class="@GetButtonClass(2)">2</button>
+                                <button @onclick="() => SelectFeedbackScore(3)" class="@GetButtonClass(3)">3</button>
+                                <button @onclick="() => SelectFeedbackScore(4)" class="@GetButtonClass(4)">4</button>
+                                <button @onclick="() => SelectFeedbackScore(5)" class="@GetButtonClass(5)">5</button>
+                            </div>
+                            <div>
+                                <button id="feedback-confirm-button" @onclick="()=>LeaveFeedback(m,feedbackScore)" class="delete-btn">Confirm</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (m.isCompleted == true && m.Receiver == loggedInUser.Id)
+                {
+                    <div class="message-container col-12">
+                        <div class="message-body col-10">
+                            <h5 id="message-content">@m.ReceiverNotification</h5>
+                        </div>
+                        <div class="confirm-request-container col-2">
+                            <div>
+                                <button @onclick="() => DeleteNotificationForReceiver(m)" id="reject-btn" class="delete-btn">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+                }
+                else if (m.isCompleted == false && m.Sender == loggedInUser.Id)
+                {
+                    <div class="message-container col-12">
+                        <div class="message-body col-10">
+                            <h5 id="message-content">@m.SenderNotification</h5>
+                        </div>
+                        <div class="confirm-request-container col-2">
+                            <div>
+                                <button @onclick="() => DeleteNotificationForSender(m)" id="reject-btn" class="delete-btn">Delete</button>
+                            </div>
+                        </div>
+                    </div>
+
+                }
+                else if (m.isCompleted == false && m.Receiver == loggedInUser.Id)
+                {
+                    <div class="message-container col-12">
+                        <div class="message-body col-10">
+                            <h5 id="message-content">@m.ReceiverNotification</h5>
+                        </div>
+                        @if (m.isConfirmed == false)
+                        {
+                            <div class="confirm-request-container col-2">
+                                <div>
+                                    <button @onclick="() => ConfirmRequest(m)" id="confirm-btn" class="delete-btn">Confirm</button>
+                                </div>
+                                <div>
+                                    <button @onclick="() => RejectDonation(m)" id="reject-btn" class="delete-btn">Reject</button>
+                                </div>
+                            </div>
+                        }
+                        else if (m.isConfirmed == true)
+                        {
+                            {
+                                <div class="confirm-request-container col-2">
+                                    <div>
+                                        <button @onclick="() => CompleteDonation(m)" id="confirm-btn" class="delete-btn">Complete</button>
+                                    </div>
+                                    <div>
+                                        <button @onclick="() => DeleteNotificationForReceiver(m)" id="reject-btn" class="delete-btn">Delete</button>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+
+            }
+        }
+        else
+        {
+            <h2 style="text-align:center">
+                You have no notifications
+            </h2>
+        }
+
+    }
+    else 
+    {
+        <h2 style="text-align:center">
+            You have no notifications
+        </h2>
+    }
+}
+
+else
+{
+    <h2 style="text-align:center">
+        You have no notifications
+    </h2>
+}
+
+
+
+
+
+@code {
+
+    private UserModel loggedInUser;
+    private List<MessageModel> userMessages;
+    private int feedbackScore = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        loggedInUser = authService.CurrentUser;
+
+        if(loggedInUser is not null)
+        {
+            userMessages = await userData.GetMessages(loggedInUser.Id);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await authService.InitializeAsync();
+            loggedInUser = authService.CurrentUser;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ConfirmRequest(MessageModel message)
+    {
+        UserModel requester = await userData.GetUser(message.Sender);
+        UserModel receiver = await userData.GetUser(message.Receiver);
+
+        MessageModel senderMatchingMessage = await GetMatchingMessage(requester, message);
+        MessageModel receiverMatchingMessage = await GetMatchingMessage(receiver, message);
+
+        if (senderMatchingMessage != null && receiverMatchingMessage != null)
+        {
+
+            foreach (MessageModel m in requester.Messages)
+            {
+                if (m.Id == message.Id)
+                {
+                    m.SenderNotification = $"{loggedInUser.DisplayName}has approved your request";
+                    m.ReceiverNotification = $"Please confirm once your item has been collected by {requester.DisplayName}";
+                    m.isConfirmed = true;
+                }
+            }
+            foreach (MessageModel m in receiver.Messages)
+            {
+                if (m.Id == message.Id)
+                {
+                    m.SenderNotification = $"{loggedInUser.DisplayName}has approved your request";
+                    m.ReceiverNotification = $"Please confirm once your item has been collected by {requester.DisplayName}";
+                    m.isConfirmed = true;
+                }
+            }
+        }
+        else if (senderMatchingMessage == null)
+        {
+            MessageModel newMessage = new MessageModel($"{message.Id}","About your latest request", $"{loggedInUser.DisplayName}has approved your request", $"Please confirm once your item has been collected by {requester.DisplayName}", requester.Id, receiver.Id);
+            requester.Messages.Add(newMessage);
+            newMessage.isConfirmed = true;
+
+            foreach (MessageModel m in receiver.Messages)
+            {
+                if (m.Id == newMessage.Id)
+                {
+                    m.SenderNotification = $"{loggedInUser.DisplayName}has approved your request";
+                    m.ReceiverNotification = $"Please confirm once your item has been collected by {requester.DisplayName}";
+                    m.isConfirmed = true;
+                }
+            }
+        }
+
+        await userData.UpdateUSer(requester);
+        await userData.UpdateUSer(receiver);
+
+        StateHasChanged();
+        navManager.NavigateTo("/");
+    }
+
+    private async Task RejectDonation(MessageModel message)
+    {
+        UserModel requester = await userData.GetUser(message.Sender);
+        UserModel receiver = await userData.GetUser(message.Receiver);
+
+        MessageModel senderMatchingMessage = await GetMatchingMessage(requester, message);
+        MessageModel receiverMatchingMessage = await GetMatchingMessage(receiver, message);
+
+        if (senderMatchingMessage != null && receiverMatchingMessage != null)
+        {
+            foreach (MessageModel m in requester.Messages)
+            {
+                if (m.Id == message.Id)
+                {
+                    m.ReceiverNotification = $"Your have rejected {requester.DisplayName}'s request to collect your item";
+                    m.SenderNotification = $"We are sorry to inform you that on this occasion {receiver.DisplayName} has rejected this collection request.";
+
+                    m.isCompleted = false;
+                    m.isConfirmed = false;
+                    m.isDeleted = true;
+
+                }
+            }
+            foreach (MessageModel m in receiver.Messages)
+            {
+                if (m.Id == message.Id)
+                {
+                    m.ReceiverNotification = $"You have rejected {requester.DisplayName}'s request to collect your item";
+                    m.SenderNotification = $"We are sorry to inform you that {receiver.DisplayName} has rejected this collection request.";
+
+                    m.isCompleted = false;
+                    m.isConfirmed = false;
+                    m.isDeleted = true;
+
+                }
+            }
+        }
+        else if (senderMatchingMessage == null)
+        {
+            MessageModel newMessage = new MessageModel($"{message.Id}", "About your latest request", $"We are sorry to inform you that {receiver.DisplayName} has rejected this collection request.", $"Your have rejected {requester.DisplayName}'s request to collect your item", requester.Id, receiver.Id);
+            requester.Messages.Add(newMessage);
+            newMessage.isCompleted = false;
+            newMessage.isConfirmed = false;
+            newMessage.isDeleted = true;
+
+            foreach (MessageModel m in receiver.Messages)
+            {
+                if (m.Id == newMessage.Id)
+                {
+                    m.SenderNotification = $"We are sorry to inform you that {receiver.DisplayName} has rejected this collection request.";
+                    m.ReceiverNotification = $"You have rejected {requester.DisplayName}'s request to collect your item";
+                    m.isCompleted = false;
+                    m.isConfirmed = false;
+                    m.isDeleted = true;
+                }
+            }
+        }
+
+        await userData.UpdateUSer(requester);
+        await userData.UpdateUSer(receiver);
+
+        StateHasChanged();
+        navManager.NavigateTo("/");
+
+    }
+
+    private async Task CompleteDonation(MessageModel message)
+    {
+        UserModel requester = await userData.GetUser(message.Sender);
+        UserModel receiver = await userData.GetUser(message.Receiver);
+
+        MessageModel senderMatchingMessage = await GetMatchingMessage(requester, message);
+        MessageModel receiverMatchingMessage = await GetMatchingMessage(receiver, message);
+
+        if (senderMatchingMessage != null && receiverMatchingMessage != null)
+        {
+            foreach (MessageModel m in requester.Messages)
+            {
+                if (m.Id == message.Id)
+                {
+                    m.ReceiverNotification = $"Your donation is complete";
+                    m.SenderNotification = $"{receiver.DisplayName} has completed this collection. Please leave some feedback for your fellow student";
+
+                    m.isCompleted = true;
+                    m.isConfirmed = false;
+
+                }
+            }
+            foreach (MessageModel m in receiver.Messages)
+            {
+                if (m.Id == message.Id)
+                {
+                    m.ReceiverNotification = $"Your donation is complete";
+                    m.SenderNotification = $"{receiver.DisplayName} has completed this collection. Please leave some feedback for your fellow student";
+
+                    m.isCompleted = true;
+                    m.isConfirmed = false;
+
+                }
+            }
+        }
+        else if (senderMatchingMessage == null)
+        {
+            MessageModel newMessage = new MessageModel($"{message.Id}", "About your latest request", $"{receiver.DisplayName} has completed this collection. Please leave some feedback for your fellow student", $"Your donation is complete", requester.Id, receiver.Id);
+            requester.Messages.Add(newMessage);
+            newMessage.isCompleted = true;
+            newMessage.isConfirmed = false;
+
+            foreach (MessageModel m in receiver.Messages)
+            {
+                if (m.Id == newMessage.Id)
+                {
+                    m.SenderNotification = $"{receiver.DisplayName} has completed this collection. Please leave some feedback for your fellow student";
+                    m.ReceiverNotification = $"Your donation is complete";
+
+                    m.isCompleted = true;
+                    m.isConfirmed = false;
+                }
+            }
+        }
+
+        await userData.UpdateUSer(requester);
+        await userData.UpdateUSer(receiver);
+
+        StateHasChanged();
+        navManager.NavigateTo("/");
+
+    }
+
+    private async Task DeleteNotificationForReceiver(MessageModel message)
+    {
+        UserModel sender = await userData.GetUser(message.Sender);
+        UserModel receiver = await userData.GetUser(message.Receiver);
+
+        List<MessageModel> itemsToRemove = new List<MessageModel>();
+
+        foreach (MessageModel m in receiver.Messages)
+        {
+
+            if (m.Id == message.Id)
+            {
+                itemsToRemove.Add(m);
+            }
+        }
+
+        foreach (MessageModel m in itemsToRemove)
+        {
+            receiver.Messages.Remove(m);
+        }
+
+        await userData.UpdateUSer(sender);
+        await userData.UpdateUSer(receiver);
+
+        StateHasChanged();
+        navManager.NavigateTo("/");
+
+    }
+
+    private async Task DeleteNotificationForSender(MessageModel message)
+    {
+        UserModel sender = await userData.GetUser(message.Sender);
+
+        List<MessageModel> itemsToRemove = new List<MessageModel>();
+
+        foreach (MessageModel m in sender.Messages)
+        {
+
+            if (m.Id == message.Id)
+            {
+                itemsToRemove.Add(m);
+            }
+        }
+
+        foreach (MessageModel m in itemsToRemove)
+        {
+            sender.Messages.Remove(m);
+        }
+
+        await userData.UpdateUSer(sender);
+
+        StateHasChanged();
+        navManager.NavigateTo("/");
+
+    }
+
+    private void SelectFeedbackScore(int score)
+    {
+        feedbackScore = score;
+    }
+
+    private string GetButtonClass(int score)
+    {
+        return feedbackScore == score ? "selected-score" : "unselected-score";
+    }
+
+    private async Task LeaveFeedback(MessageModel message, int score)
+    {
+        UserModel receiver = await userData.GetUser(message.Receiver);
+        UserModel sender = await userData.GetUser(message.Sender);
+
+        MessageModel newMessage = new MessageModel("You've received some feedback", "", $"You have received {feedbackScore} trust points from {sender.DisplayName}", sender.Id, receiver.Id);
+        newMessage.isCompleted = true;
+
+        receiver.Messages.Add(newMessage);
+
+        foreach (MessageModel m in sender.Messages)
+        {
+            if (m.Id == message.Id)
+            {
+                m.SenderNotification = $"Thank you for using Symbiotiq";
+                m.isDeleted = true;
+                m.isCompleted = false;
+            }
+        }
+        receiver.Trustpoints += score;
+
+        await userData.UpdateUSer(receiver);
+        await userData.UpdateUSer(sender);
+
+        StateHasChanged();
+        navManager.NavigateTo("/");
+
+    }
+
+    private Task<MessageModel?> GetMatchingMessage(UserModel user, MessageModel originalMessage)
+    {
+        MessageModel? matchingMessage = null;
+
+        foreach (MessageModel m in user.Messages)
+        {
+            if (m.Id == originalMessage.Id)
+            {
+                matchingMessage = m;
+                break;
+            }
+        }
+
+        return Task.FromResult(matchingMessage);
+    }
+}

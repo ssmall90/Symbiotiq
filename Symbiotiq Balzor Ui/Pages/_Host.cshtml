@@ -1,0 +1,14 @@
+﻿@page "/"
+@namespace Symbiotiq_Balzor_Ui.Pages
+@using Symbiotiq_Balzor_Ui.Models
+@inject IAuthService authService
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+@{
+
+    Layout = "_Layout";
+
+}
+
+
+<component type="typeof(App)" render-mode="ServerPrerendered" />
+
